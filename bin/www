@@ -1,90 +1,75 @@
-#!/usr/bin/env node
+#!/usr/bin/env coffee
 
-/**
- * Module dependencies.
- */
+###*
+# Module dependencies.
+###
 
-var app = require('../app');
-var debug = require('debug')('cognote-js:server');
-var http = require('http');
+app = require('../app')
+debug = require('debug')('cognote-js:server')
+http = require('http')
 
-/**
- * Get port from environment and store in Express.
- */
+###*
+# Normalize a port into a number, string, or false.
+###
 
-var port = normalizePort(process.env.PORT || '3000');
-app.set('port', port);
+normalizePort = (val) ->
+  port_ = parseInt(val, 10)
+  if isNaN(port_)
+    # named pipe
+    return val
+  if port_ >= 0
+    # port number
+    return port_
+  false
 
-/**
- * Create HTTP server.
- */
+###*
+# Event listener for HTTP server "error" event.
+###
 
-var server = http.createServer(app);
+onError = (error) ->
+  if error.syscall != 'listen'
+    throw error
+  bind = if typeof port == 'string' then 'Pipe ' + port else 'Port ' + port
+  # handle specific listen errors with friendly messages
+  switch error.code
+    when 'EACCES'
+      console.error bind + ' requires elevated privileges'
+      process.exit 1
+    when 'EADDRINUSE'
+      console.error bind + ' is already in use'
+      process.exit 1
+    else
+      throw error
+  return
 
-/**
- * Listen on provided port, on all network interfaces.
- */
+###*
+# Event listener for HTTP server "listening" event.
+###
 
-server.listen(port);
-server.on('error', onError);
-server.on('listening', onListening);
+onListening = ->
+  addr = server.address()
+  bind = if typeof addr == 'string' then 'pipe ' + addr else 'port ' + addr.port
+  debug 'Listening on ' + bind
+  return
 
-/**
- * Normalize a port into a number, string, or false.
- */
+###*
+# Get port from environment and store in Express.
+###
 
-function normalizePort(val) {
-  var port = parseInt(val, 10);
+port = normalizePort(process.env.PORT or '3000')
 
-  if (isNaN(port)) {
-    // named pipe
-    return val;
-  }
+app.set 'port', port
 
-  if (port >= 0) {
-    // port number
-    return port;
-  }
+###*
+# Create HTTP server.
+###
 
-  return false;
-}
+server = http.createServer(app)
 
-/**
- * Event listener for HTTP server "error" event.
- */
+###*
+# Listen on provided port, on all network interfaces.
+###
 
-function onError(error) {
-  if (error.syscall !== 'listen') {
-    throw error;
-  }
-
-  var bind = typeof port === 'string'
-    ? 'Pipe ' + port
-    : 'Port ' + port;
-
-  // handle specific listen errors with friendly messages
-  switch (error.code) {
-    case 'EACCES':
-      console.error(bind + ' requires elevated privileges');
-      process.exit(1);
-      break;
-    case 'EADDRINUSE':
-      console.error(bind + ' is already in use');
-      process.exit(1);
-      break;
-    default:
-      throw error;
-  }
-}
-
-/**
- * Event listener for HTTP server "listening" event.
- */
-
-function onListening() {
-  var addr = server.address();
-  var bind = typeof addr === 'string'
-    ? 'pipe ' + addr
-    : 'port ' + addr.port;
-  debug('Listening on ' + bind);
-}
+server.listen port
+server.on 'error', onError
+server.on 'listening', onListening
